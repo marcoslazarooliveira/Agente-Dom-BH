@@ -1,0 +1,41 @@
+name: Monitorar Vagas DOM-BH
+
+on:
+  schedule:
+    # Todo dia útil às 9h (horário de Brasília = 12h UTC)
+    - cron: "0 12 * * 1-5"
+  workflow_dispatch:  # permite executar manualmente pelo GitHub
+
+jobs:
+  verificar-vagas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: |
+          pip install requests beautifulsoup4 pdfplumber anthropic schedule playwright
+          playwright install chromium
+
+      - name: Executar agente
+        run: python agente_dom_bh.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Se usar Telegram, adicione também:
+          # TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          # TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Salvar PDFs como artefato (opcional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfs-dom-bh
+          path: pdfs_dom_bh/
+          retention-days: 30
+        if: always()
